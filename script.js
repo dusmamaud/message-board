@@ -1,315 +1,260 @@
-// Constants
+// Constants and State Management
 const STORAGE_KEYS = {
-  THEME: "messagehub-theme",
-  USER: "messagehub-user",
-  MESSAGES: "messagehub-messages",
+    USER_DATA: 'messagehub_user',
+    MESSAGES: 'messagehub_messages',
+    THEME: 'messagehub_theme'
 };
 
-const API_ENDPOINTS = {
-  MESSAGES: "/api/messages",
-  USERS: "/api/users",
-};
-
-// State Management
 let currentUser = null;
 let messages = [];
 
+// Initialize messages array if empty
+if (!localStorage.getItem(STORAGE_KEYS.MESSAGES)) {
+    localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify([]));
+}
+
 // DOM Elements
 const elements = {
-  themeSwitch: document.getElementById("theme-switch"),
-  currentTime: document.getElementById("current-time"),
-  adminWelcome: document.getElementById("admin-welcome"),
-  loginSection: document.getElementById("login-section"),
-  boardSection: document.getElementById("board-section"),
-  loginForm: document.getElementById("login-form"),
-  messageForm: document.getElementById("message-form"),
-  messagesContainer: document.getElementById("messages-container"),
-  userAvatar: document.getElementById("user-avatar"),
-  userName: document.getElementById("user-name"),
-  logoutBtn: document.getElementById("logout-btn"),
-  toast: document.getElementById("toast"),
-  toastMessage: document.getElementById("toast-message"),
-  loadingSpinner: document.getElementById("loading-spinner"),
+    loginForm: document.getElementById('login-form'),
+    messageForm: document.getElementById('message-form'),
+    messagesContainer: document.getElementById('messages-container'),
+    loginSection: document.getElementById('login-section'),
+    boardSection: document.getElementById('board-section'),
+    adminWelcome: document.getElementById('admin-welcome'),
+    userAvatar: document.getElementById('user-avatar'),
+    userName: document.getElementById('user-name'),
+    currentTime: document.getElementById('current-time'),
+    toast: document.getElementById('toast'),
+    toastMessage: document.getElementById('toast-message')
 };
 
-// Theme Management
-class ThemeManager {
-  static init() {
-    const savedTheme = localStorage.getItem(STORAGE_KEYS.THEME) || "light";
-    ThemeManager.setTheme(savedTheme);
-    elements.themeSwitch.checked = savedTheme === "dark";
-
-    elements.themeSwitch.addEventListener("change", (e) => {
-      const newTheme = e.target.checked ? "dark" : "light";
-      ThemeManager.setTheme(newTheme);
-    });
-  }
-
-  static setTheme(theme) {
-    document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem(STORAGE_KEYS.THEME, theme);
-  }
-}
-
-// Time Display
-class TimeDisplay {
-  static init() {
-    TimeDisplay.updateTime();
-    setInterval(TimeDisplay.updateTime, 1000);
-  }
-
-  static updateTime() {
-    const now = new Date();
-    elements.currentTime.textContent = now.toLocaleTimeString();
-  }
-}
-
-// Toast Notifications
-class Toast {
-  static show(message, type = "success") {
+// Toast Notification System
+const showToast = (message, type = 'success') => {
     elements.toastMessage.textContent = message;
     elements.toast.className = `toast ${type}`;
-    elements.toast.classList.remove("hidden");
-
+    elements.toast.classList.remove('hidden');
+    
     setTimeout(() => {
-      elements.toast.classList.add("hidden");
+        elements.toast.classList.add('hidden');
     }, 3000);
-  }
-}
-
-// User Management
-class UserManager {
-  static async login(username, password, profilePic) {
-    try {
-      elements.loadingSpinner.classList.remove("hidden");
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      const isAdmin = username === "admin" && password === "admin123";
-
-      currentUser = {
-        username,
-        isAdmin,
-        profilePic: profilePic || "default-avatar.png",
-      };
-
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(currentUser));
-
-      UserManager.updateUI();
-      Toast.show(`Welcome, ${username}!`);
-
-      return true;
-    } catch (error) {
-      console.error("Login error:", error);
-      Toast.show("Login failed. Please try again.", "error");
-      return false;
-    } finally {
-      elements.loadingSpinner.classList.add("hidden");
-    }
-  }
-
-  static logout() {
-    currentUser = null;
-    localStorage.removeItem(STORAGE_KEYS.USER);
-    elements.loginSection.classList.remove("hidden");
-    elements.boardSection.classList.add("hidden");
-    elements.adminWelcome.classList.add("hidden");
-  }
-
-  static updateUI() {
-    elements.loginSection.classList.add("hidden");
-    elements.boardSection.classList.remove("hidden");
-
-    if (currentUser.isAdmin) {
-      elements.adminWelcome.classList.remove("hidden");
-    }
-
-    elements.userAvatar.src = currentUser.profilePic;
-    elements.userName.textContent = currentUser.username;
-  }
-}
+};
 
 // Message Management
-class MessageManager {
-  static async loadMessages() {
-    try {
-      elements.loadingSpinner.classList.remove("hidden");
+const MessageSystem = {
+    async saveMessage(text) {
+        try {
+            const newMessage = {
+                id: Date.now().toString(),
+                text: text,
+                username: currentUser.username,
+                profilePic: currentUser.profilePic || 'default-avatar.png',
+                timestamp: new Date().toISOString(),
+                isAdminMessage: currentUser.isAdmin
+            };
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+            // Get existing messages
+            const existingMessages = JSON.parse(localStorage.getItem(STORAGE_KEYS.MESSAGES) || '[]');
+            existingMessages.unshift(newMessage);
 
-      const response = await fetch("messages.json");
-      messages = await response.json();
+            // Save to localStorage
+            localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(existingMessages));
+            
+            this.displayMessages();
+            showToast('Message sent successfully!');
+            return true;
+        } catch (error) {
+            console.error('Error saving message:', error);
+            showToast('Failed to send message', 'error');
+            return false;
+        }
+    },
 
-      MessageManager.displayMessages();
-    } catch (error) {
-      console.error("Error loading messages:", error);
-      Toast.show("Failed to load messages", "error");
-    } finally {
-      elements.loadingSpinner.classList.add("hidden");
+    async deleteMessage(messageId) {
+        try {
+            let existingMessages = JSON.parse(localStorage.getItem(STORAGE_KEYS.MESSAGES) || '[]');
+            existingMessages = existingMessages.filter(m => m.id !== messageId);
+            
+            localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(existingMessages));
+            this.displayMessages();
+            showToast('Message deleted successfully!');
+        } catch (error) {
+            console.error('Error deleting message:', error);
+            showToast('Failed to delete message', 'error');
+        }
+    },
+
+    displayMessages() {
+        const messages = JSON.parse(localStorage.getItem(STORAGE_KEYS.MESSAGES) || '[]');
+        elements.messagesContainer.innerHTML = '';
+
+        messages.forEach(message => {
+            const messageElement = document.createElement('div');
+            messageElement.className = `message ${message.isAdminMessage ? 'admin-message' : ''}`;
+            
+            messageElement.innerHTML = `
+                <div class="message-header">
+                    <div class="message-user">
+                        <img src="${message.profilePic}" alt="${message.username}" onerror="this.src='default-avatar.png'">
+                        <span>${message.username}</span>
+                    </div>
+                    <span class="message-timestamp">${new Date(message.timestamp).toLocaleString()}</span>
+                </div>
+                <div class="message-content">${this.escapeHtml(message.text)}</div>
+                <div class="message-actions">
+                    <button class="action-btn copy-btn" onclick="MessageSystem.copyMessage('${message.id}')">
+                        <i class='bx bx-copy'></i> Copy
+                    </button>
+                    ${currentUser?.isAdmin ? `
+                        <button class="action-btn delete-btn" onclick="MessageSystem.deleteMessage('${message.id}')">
+                            <i class='bx bx-trash'></i> Delete
+                        </button>
+                    ` : ''}
+                </div>
+            `;
+            
+            elements.messagesContainer.appendChild(messageElement);
+        });
+    },
+
+    async copyMessage(messageId) {
+        const messages = JSON.parse(localStorage.getItem(STORAGE_KEYS.MESSAGES) || '[]');
+        const message = messages.find(m => m.id === messageId);
+        
+        if (!message) return;
+
+        try {
+            await navigator.clipboard.writeText(message.text);
+            showToast('Message copied to clipboard!');
+        } catch (error) {
+            console.error('Copy failed:', error);
+            showToast('Failed to copy message', 'error');
+        }
+    },
+
+    escapeHtml(unsafe) {
+        return unsafe
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
     }
-  }
+};
 
-  static async saveMessage(text) {
-    try {
-      const newMessage = {
-        id: Date.now().toString(),
-        text,
-        username: currentUser.username,
-        profilePic: currentUser.profilePic,
-        timestamp: new Date().toISOString(),
-        isAdminMessage: currentUser.isAdmin,
-      };
+// User Management
+const UserSystem = {
+    login(username, password, profilePic = 'default-avatar.png') {
+        try {
+            const isAdmin = username === 'admin' && password === 'admin123';
+            
+            currentUser = {
+                username,
+                profilePic,
+                isAdmin
+            };
 
-      messages.unshift(newMessage);
+            localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(currentUser));
+            
+            this.updateUI();
+            showToast(`Welcome, ${username}!`);
+            return true;
+        } catch (error) {
+            console.error('Login error:', error);
+            showToast('Login failed. Please try again.', 'error');
+            return false;
+        }
+    },
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 500));
+    logout() {
+        localStorage.removeItem(STORAGE_KEYS.USER_DATA);
+        currentUser = null;
+        elements.loginSection.classList.remove('hidden');
+        elements.boardSection.classList.add('hidden');
+        elements.adminWelcome.classList.add('hidden');
+    },
 
-      MessageManager.displayMessages();
-      Toast.show("Message sent successfully!");
+    updateUI() {
+        if (currentUser) {
+            elements.loginSection.classList.add('hidden');
+            elements.boardSection.classList.remove('hidden');
+            elements.userAvatar.src = currentUser.profilePic;
+            elements.userName.textContent = currentUser.username;
 
-      return true;
-    } catch (error) {
-      console.error("Error saving message:", error);
-      Toast.show("Failed to send message", "error");
-      return false;
+            if (currentUser.isAdmin) {
+                elements.adminWelcome.classList.remove('hidden');
+            }
+        }
     }
-  }
+};
 
-  static async deleteMessage(messageId) {
-    try {
-      messages = messages.filter((m) => m.id !== messageId);
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      MessageManager.displayMessages();
-      Toast.show("Message deleted successfully!");
-    } catch (error) {
-      console.error("Error deleting message:", error);
-      Toast.show("Failed to delete message", "error");
-    }
-  }
-
-  static displayMessages() {
-    elements.messagesContainer.innerHTML = "";
-
-    messages.forEach((message) => {
-      const messageElement = document.createElement("div");
-      messageElement.className = `message ${
-        message.isAdminMessage ? "admin-message" : ""
-      }`;
-
-      messageElement.innerHTML = `
-              <div class="message-header">
-                  <div class="message-user">
-                      <img src="${message.profilePic}" alt="${
-        message.username
-      }">
-                      <span>${message.username}</span>
-                  </div>
-                  <span class="message-timestamp">${new Date(
-                    message.timestamp
-                  ).toLocaleString()}</span>
-              </div>
-              <div class="message-content">${message.text}</div>
-              <div class="message-actions">
-                  <button class="action-btn copy-btn" onclick="MessageManager.copyMessage('${
-                    message.id
-                  }')">
-                      <i class='bx bx-copy'></i>
-                      Copy
-                  </button>
-                  ${
-                    currentUser.isAdmin
-                      ? `
-                      <button class="action-btn delete-btn" onclick="MessageManager.deleteMessage('${message.id}')">
-                          <i class='bx bx-trash'></i>
-                          Delete
-                      </button>
-                  `
-                      : ""
-                  }
-              </div>
-          `;
-
-      elements.messagesContainer.appendChild(messageElement);
-    });
-  }
-
-  static async copyMessage(messageId) {
-    const message = messages.find((m) => m.id === messageId);
-    if (!message) return;
-
-    try {
-      await navigator.clipboard.writeText(message.text);
-      Toast.show("Message copied to clipboard!");
-    } catch (error) {
-      console.error("Copy failed:", error);
-      Toast.show("Failed to copy message", "error");
-    }
-  }
-}
+// Clock Update
+const updateClock = () => {
+    elements.currentTime.textContent = new Date().toLocaleTimeString();
+};
 
 // Event Listeners
-document.addEventListener("DOMContentLoaded", () => {
-  // Initialize components
-  ThemeManager.init();
-  TimeDisplay.init();
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize clock
+    updateClock();
+    setInterval(updateClock, 1000);
 
-  // Check for saved user session
-  const savedUser = localStorage.getItem(STORAGE_KEYS.USER);
-  if (savedUser) {
-    currentUser = JSON.parse(savedUser);
-    UserManager.updateUI();
-    MessageManager.loadMessages();
-  }
-
-  // Login form submission
-  elements.loginForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const username = e.target.username.value;
-    const password = e.target.password.value;
-    const profilePicInput = e.target["profile-pic"];
-
-    let profilePic = null;
-    if (profilePicInput.files.length > 0) {
-      profilePic = await new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target.result);
-        reader.readAsDataURL(profilePicInput.files[0]);
-      });
+    // Check for existing session
+    const savedUser = localStorage.getItem(STORAGE_KEYS.USER_DATA);
+    if (savedUser) {
+        currentUser = JSON.parse(savedUser);
+        UserSystem.updateUI();
+        MessageSystem.displayMessages();
     }
 
-    const success = await UserManager.login(username, password, profilePic);
-    if (success) {
-      MessageManager.loadMessages();
-    }
-  });
+    // Login form handler
+    elements.loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const username = e.target.username.value;
+        const password = e.target.password.value;
+        const profilePicInput = e.target['profile-pic'];
+        
+        let profilePic = 'default-avatar.png';
+        if (profilePicInput.files.length > 0) {
+            try {
+                profilePic = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.readAsDataURL(profilePicInput.files[0]);
+                });
+            } catch (error) {
+                console.error('Error reading profile picture:', error);
+            }
+        }
 
-  // Message form submission
-  elements.messageForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
+        if (UserSystem.login(username, password, profilePic)) {
+            MessageSystem.displayMessages();
+        }
+    });
 
-    const messageText = e.target["message-input"].value.trim();
-    if (!messageText) return;
+    // Message form handler
+    elements.messageForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const messageInput = e.target['message-input'];
+        const messageText = messageInput.value.trim();
+        
+        if (!messageText) return;
 
-    const success = await MessageManager.saveMessage(messageText);
-    if (success) {
-      e.target.reset();
-    }
-  });
+        if (await MessageSystem.saveMessage(messageText)) {
+            messageInput.value = '';
+        }
+    });
 
-  // Logout button
-  elements.logoutBtn.addEventListener("click", UserManager.logout);
+    // Logout handler
+    document.getElementById('logout-btn').addEventListener('click', () => {
+        UserSystem.logout();
+    });
 });
 
-// Auto-refresh messages
+// Auto refresh messages
 setInterval(() => {
-  if (currentUser) {
-    MessageManager.loadMessages();
-  }
+    if (currentUser) {
+        MessageSystem.displayMessages();
+    }
 }, 30000);
