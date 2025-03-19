@@ -1,0 +1,80 @@
+name: Update Messages
+
+on:
+  push:
+    paths:
+      - 'messages.json'
+  repository_dispatch:
+    types: [update-messages]
+
+jobs:
+  update-messages:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Validate messages.json
+        run: |
+          node -e "
+            const messages = require('./messages.json');
+            if (!messages.messages || !Array.isArray(messages.messages)) {
+              throw new Error('Invalid messages format');
+            }
+          "
+          
+      - name: Update metadata
+        run: |
+          node -e "
+            const fs = require('fs');
+            const messages = require('./messages.json');
+            messages.metadata.lastUpdated = new Date().toISOString();
+            fs.writeFileSync('./messages.json', JSON.stringify(messages, null, 2));
+          "
+          
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add messages.json
+          git commit -m "Update messages metadata" || echo "No changes to commit"
+          git push
+          
+      - name: Notify about update
+        if: success()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const issue = context.issue;
+            await github.rest.issues.createComment({
+              ...issue,
+              body: '✅ Messages have been updated successfully!'
+            });
+
+  notify-failure:
+    needs: update-messages
+    if: failure()
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Notify about failure
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const issue = context.issue;
+            await github.rest.issues.createComment({
+              ...issue,
+              body: '❌ Failed to update messages. Please check the workflow logs.'
+            });
