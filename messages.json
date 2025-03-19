@@ -1,0 +1,24 @@
+{
+  "messages": [
+    {
+      "id": "1",
+      "text": "Welcome to MessageHub! This is a sample message.",
+      "username": "admin",
+      "profilePic": "default-avatar.png",
+      "timestamp": "2024-03-19T10:00:00.000Z",
+      "isAdminMessage": true
+    },
+    {
+      "id": "2",
+      "text": "Feel free to start discussions and connect with others!",
+      "username": "admin",
+      "profilePic": "default-avatar.png",
+      "timestamp": "2024-03-19T10:01:00.000Z",
+      "isAdminMessage": true
+    }
+  ],
+  "metadata": {
+    "lastUpdated": "2024-03-19T10:01:00.000Z",
+    "version": "1.0.0"
+  }
+}

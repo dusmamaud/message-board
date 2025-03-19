@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MessageHub - Professional Message Board</title>
+    <!-- BoxIcons CDN -->
+    <link
+      href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css"
+      rel="stylesheet"
+    />
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css" />
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="favicon.png" />
+  </head>
+  <body>
+    <!-- Theme Toggle -->
+    <div class="theme-toggle">
+      <i class="bx bx-sun"></i>
+      <div class="toggle-switch">
+        <input type="checkbox" id="theme-switch" />
+        <label for="theme-switch"></label>
+      </div>
+      <i class="bx bx-moon"></i>
+    </div>
+
+    <!-- Time Display -->
+    <div class="time-display">
+      <i class="bx bx-time"></i>
+      <span id="current-time"></span>
+    </div>
+
+    <!-- Admin Welcome Message -->
+    <div id="admin-welcome" class="admin-welcome hidden">
+      <i class="bx bxs-crown"></i>
+      <span>Welcome, Administrator!</span>
+    </div>
+
+    <!-- Login Section -->
+    <section id="login-section" class="section-container">
+      <div class="login-container">
+        <div class="login-header">
+          <i class="bx bxs-message-square-dots main-icon"></i>
+          <h1>MessageHub</h1>
+          <p>Connect and Communicate</p>
+        </div>
+
+        <form id="login-form" class="login-form">
+          <div class="input-group">
+            <i class="bx bxs-user"></i>
+            <input type="text" id="username" placeholder="Username" required />
+          </div>
+
+          <div class="input-group">
+            <i class="bx bxs-lock-alt"></i>
+            <input
+              type="password"
+              id="password"
+              placeholder="Password"
+              required
+            />
+          </div>
+
+          <div class="input-group file-input">
+            <i class="bx bxs-camera"></i>
+            <input type="file" id="profile-pic" accept="image/*" />
+            <label for="profile-pic">Choose Profile Picture</label>
+          </div>
+
+          <button type="submit" class="btn-primary">
+            <i class="bx bx-log-in-circle"></i>
+            Login / Register
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- Message Board Section -->
+    <section id="board-section" class="section-container hidden">
+      <div class="board-container">
+        <!-- User Info -->
+        <div class="user-info">
+          <img id="user-avatar" src="default-avatar.png" alt="Profile" />
+          <span id="user-name"></span>
+          <button id="logout-btn" class="btn-secondary">
+            <i class="bx bx-log-out"></i>
+            Logout
+          </button>
+        </div>
+
+        <!-- Message Form -->
+        <form id="message-form" class="message-form">
+          <textarea
+            id="message-input"
+            placeholder="Type your message here..."
+            required
+          ></textarea>
+          <button type="submit" class="btn-primary">
+            <i class="bx bx-send"></i>
+            Send Message
+          </button>
+        </form>
+
+        <!-- Messages Container -->
+        <div id="messages-container" class="messages-container">
+          <!-- Messages will be dynamically inserted here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Toast Notifications -->
+    <div id="toast" class="toast hidden">
+      <i class="bx bx-check-circle"></i>
+      <span id="toast-message"></span>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loading-spinner" class="loading-spinner hidden">
+      <i class="bx bx-loader-alt"></i>
+    </div>
+
+    <!-- Custom JavaScript -->
+    <script src="script.js"></script>
+  </body>
+</html>
